@@ -104,3 +104,114 @@ class SnippetSerializer(serializers.ModelSerializer):
 It's important to remember that ModelSerializer classes don't do anything particularly magical, they are simply a shortcut for creating serializer classes:
 1. An automatically determined set of fields.
 2. Simple default implementations for the create() and update() methods.
+
+# Simplifying Serialization
+Serializing using field
+```
+class ProductSerializer(serializers.ModelSerializer):
+    # read_only decide wheather or not we can serialize using serializer
+    is_on_sale = serializers.BooleanField(read_only=True)
+    current_price = serializers.FloatField(read_only=True)
+    description = serializers.CharField(min_length=2, max_length=200)# this will ensure validation
+
+    class Meta:
+        model = Product
+        fields = (
+            'id','name', 'description', 'price', 'sale_start', 'sale_end',
+            'current_price','is_on_sale',
+        )
+```
+
+# SerializeMethodField
+get_ is prefix to the field name for the method that is called. You can serialize of one or many item using many parameter.
+many = True (create a list of serialize of model instance)
+many = False (will serialize only one model instance)
+```
+class CartItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ShoppingCartItem
+        fields = (
+            'product', 'quantity',
+        )
+
+
+class ProductSerializer(serializers.ModelSerializer):
+    # read_only decide wheather or not we can serialize using serializer
+    is_on_sale = serializers.BooleanField(read_only=True)
+    current_price = serializers.FloatField(read_only=True)
+    description = serializers.CharField(min_length=2, max_length=200)# this will ensure validation
+    cart_items = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Product
+        fields = (
+            'id','name', 'description', 'price', 'sale_start', 'sale_end',
+            'current_price','is_on_sale', 'cart_items',
+        )
+
+    def get_cart_items(self, instance):
+        items = ShoppingCartItem.obejects.filter(product=instance)
+        return CartItemSerializer(items, many=True).data
+------------------------------------------------------------------------------
+import json
+>>> from ecomm.models import *
+>>> from ecomm.serializers import *
+>>> p = Product.objects.all().first()
+>>> c = ShoppingCart()
+>>> c.save()
+>>> i = ShoppingCartItem(product=p,shopping_cart=c,quantity=3)
+>>> i.save()
+>>> ser = ProductSerializer(p)
+>>> print(json.dumps(ser.data, indent=2))
+```
+# NumberFeild With Serializer
+1. IntegerField
+```
+quantity = serializer.IntegerField(min_value=1 , max_value=100)
+```
+2. FloatField
+```
+price = serializer.FloatField(min_value=1.0, max_value=100000)
+```
+3. DecimalField
+more powerful than FloatField with max_digits and decimal_places.
+```
+price = serializer.DecimalField(min_value=1.00, max_value=100000, max_digits=None, decimal_places=2)
+```
+
+# Date and Time field with serializer
+1. input_formats : format
+2. format : format
+3. help_text : Appear in broeser for REST API.
+4. style : control how field appear in REST API
+```
+sale_start = serializers.DateTimeField(
+    input_formats=['%I:%M %p %d %B %Y'], format=None, allow_null=True,
+    help_text='Accepted format is "12:03 PM 16 April 2018"',
+    style={'input_type':'text', 'placeholder':'12:03 PM 16 July 2020'},
+)
+```
+
+# Plain Serializer
+```
+class ProductStatSerializer(serializers.Serializer):
+    stats = serializers.DictField(
+        child=serializers.ListField(
+            child=serializers.IntegerField(),
+        )
+    )
+```
+# Serilize with ImageField and FileField
+FileField has write_only and read_only field attribute. validated_data attribute is data that passed through serializer and moodel validate process. It is used to create and update model.
+```
+    photo = serializers.ImageField(default=None)
+    warranty = serializers.FileField(write_only=True, default=None)
+
+    def update(self, instance, validated_data):
+        if validated_data.get('warranty'):
+            instance.description += '\n\nWarranty\n\n'
+            instance.description += b'; '.join(
+                validated_data['warranty'].readlines()
+            ).decode()
+        return instance
+```
