@@ -1,0 +1,11 @@
+version: '3'
+
+services:
+    web_rest:
+        build: .
+        command: python manage.py runserver 0.0.0.0:5007
+        restart: always
+        volumes:
+            - .:/django_code_rest
+        ports:
+            - "5007:5007"
