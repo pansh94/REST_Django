@@ -2,6 +2,7 @@
 Django REST framework serializer to serialize a model.
 
 ## Serializer
+Serialization/Deserialixation is done to convert obj into it's JSON representation before sending to user and parse the incoming JSON etc data into obj before saving into db.
 ```
 #add rest_framework in settings.py
 INSTALLED_APPS = (
@@ -15,6 +16,7 @@ from snippets.models import Snippet, LANGUAGE_CHOICES, STYLE_CHOICES
 
 
 class SnippetSerializer(serializers.Serializer):
+    #data to be serialized or deserialized
     id = serializers.IntegerField(read_only=True)
     title = serializers.CharField(required=False, allow_blank=True, max_length=100)
     code = serializers.CharField(style={'base_template': 'textarea.html'})
@@ -39,6 +41,15 @@ class SnippetSerializer(serializers.Serializer):
         instance.style = validated_data.get('style', instance.style)
         instance.save()
         return instance
+```
+serialization 
+```
+serializer = SnippetSerializer(snippet)
+serializer.data
+# {'id': 2, 'title': '', 'code': 'print("hello, world")\n', 'linenos': False, 'language': 'python', 'style': 'friendly'}
+content = JSONRenderer().render(serializer.data)
+content
+# b'{"id": 2, "title": "", "code": "print(\\"hello, world\\")\\n", "linenos": false, "language": "python", "style": "friendly"}'
 ```
 Deserialization is similar. First we parse a stream into Python native datatypes...
 ```
