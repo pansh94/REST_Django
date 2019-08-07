@@ -74,6 +74,10 @@ serializer = SnippetSerializer(Snippet.objects.all(), many=True)
 serializer.data
 ```
 # Using ModelSerializer
+depth =1 #to define primary key attribute.
+exclude #to exlude fields
+read_only_fields #to define read only fields.
+Note : Model fields which have **editable=False set, and AutoField fields** will be set to read-only by default, and do not need to be added to the read_only_fields option.
 ```
 --------------------------------------------------------------------------------
 from rest_framework import serializers
